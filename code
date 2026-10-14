@@ -1,0 +1,111 @@
+
+#include <SPI.h>
+#include <MFRC522.h>
+
+#define SS_PIN 10
+#define RST_PIN 9
+#define GREEN_LED 4
+#define RED_LED 5
+#define BUZZER 6
+
+MFRC522 rfid(SS_PIN, RST_PIN);
+
+// Replace these example UIDs with your own card UIDs.
+const char* studentUIDs[] = {
+  "A1 B2 C3 D4",
+  "12 34 56 78"
+};
+
+const char* studentNames[] = {
+  "Student One",
+  "Student Two"
+};
+
+const int studentCount = 2;
+bool attendanceMarked[2] = {false, false};
+
+String readUID() {
+  String uid = "";
+
+  for (byte i = 0; i < rfid.uid.size; i++) {
+    if (rfid.uid.uidByte[i] < 0x10) {
+      uid += "0";
+    }
+
+    uid += String(rfid.uid.uidByte[i], HEX);
+
+    if (i < rfid.uid.size - 1) {
+      uid += " ";
+    }
+  }
+
+  uid.toUpperCase();
+  return uid;
+}
+
+void setup() {
+  Serial.begin(9600);
+  SPI.begin();
+  rfid.PCD_Init();
+
+  pinMode(GREEN_LED, OUTPUT);
+  pinMode(RED_LED, OUTPUT);
+  pinMode(BUZZER, OUTPUT);
+
+  Serial.println("SMART ATTENDANCE SYSTEM");
+  Serial.println("Scan your RFID card...");
+}
+
+void loop() {
+  if (!rfid.PICC_IsNewCardPresent()) return;
+  if (!rfid.PICC_ReadCardSerial()) return;
+
+  String uid = readUID();
+  Serial.print("Card UID: ");
+  Serial.println(uid);
+
+  bool found = false;
+
+  for (int i = 0; i < studentCount; i++) {
+    if (uid == studentUIDs[i]) {
+      found = true;
+
+      if (!attendanceMarked[i]) {
+        attendanceMarked[i] = true;
+
+        Serial.print("Name: ");
+        Serial.println(studentNames[i]);
+        Serial.println("Attendance: PRESENT");
+
+        digitalWrite(GREEN_LED, HIGH);
+        tone(BUZZER, 1000, 200);
+        delay(500);
+        digitalWrite(GREEN_LED, LOW);
+      } else {
+        Serial.println("Attendance already marked!");
+
+        digitalWrite(RED_LED, HIGH);
+        tone(BUZZER, 400, 400);
+        delay(500);
+        digitalWrite(RED_LED, LOW);
+      }
+
+      break;
+    }
+  }
+
+  if (!found) {
+    Serial.println("Unknown card! Access denied.");
+
+    digitalWrite(RED_LED, HIGH);
+    tone(BUZZER, 400, 600);
+    delay(700);
+    digitalWrite(RED_LED, LOW);
+  }
+
+  Serial.println("--------------------");
+
+  rfid.PICC_HaltA();
+  rfid.PCD_StopCrypto1();
+  delay(300);
+}
