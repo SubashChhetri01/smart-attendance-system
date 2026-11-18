@@ -1,0 +1,289 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Attendance System</title>
+
+    <style>
+        * {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #111827;
+    color: #f8fafc;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 40px auto;
+    padding: 20px;
+}
+
+h1 {
+    color: #60a5fa;
+    text-align: center;
+}
+
+h2 {
+    color: #93c5fd;
+}
+
+.card {
+    background: #1f2937;
+    padding: 25px;
+    margin-bottom: 25px;
+    border-radius: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+
+input, select {
+    width: 100%;
+    padding: 13px;
+    margin: 8px 0 18px;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    background: #374151;
+    color: white;
+}
+
+button {
+    background: #2563eb;
+    color: white;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1d4ed8;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+    background: #1f2937;
+}
+
+th {
+    background: #2563eb;
+    color: white;
+}
+
+th, td {
+    padding: 14px;
+    text-align: left;
+    border-bottom: 1px solid #374151;
+}
+
+tr:hover {
+    background: #334155;
+}
+    </style>
+
+
+
+
+
+<body>
+
+<div class="container">
+
+    <h1>Smart Attendance System</h1>
+
+    <div class="card">
+        <h2>Student Registration</h2>
+
+        <form id="registrationForm">
+
+            <label>Student ID</label>
+            <input type="text" id="student_id"
+                   placeholder="Enter Student ID" required>
+
+            <label>Student Name</label>
+            <input type="text" id="name"
+                   placeholder="Enter Full Name" required>
+
+            <label>Email Address</label>
+            <input type="email" id="email"
+                   placeholder="Enter University Email" required>
+
+            <button type="submit">Register Student</button>
+
+        </form>
+
+        <p id="message"></p>
+    </div>
+
+    <div class="card">
+        <h2>Registered Students</h2>
+
+        <button onclick="loadStudents()">Refresh Students</button>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Email</th>
+                </tr>
+            </thead>
+
+            <tbody id="studentList">
+            </tbody>
+        </table>
+    </div>
+
+</div>
+<!-- Attendance Section -->
+<div class="card">
+
+    <h2>Mark Attendance</h2>
+
+    <label>Student ID</label>
+    <input type="text"
+           id="attendanceStudentId"
+           placeholder="Enter Student ID">
+
+    <label>Attendance Status</label>
+    <select id="attendanceStatus">
+        <option value="Present">Present</option>
+        <option value="Absent">Absent</option>
+    </select>
+
+    <button onclick="markAttendance()">
+        Submit Attendance
+    </button>
+
+    <p id="attendanceMessage"></p>
+
+    <hr>
+
+    <h2>Attendance Records</h2>
+
+    <button onclick="loadAttendance()">
+        Refresh Attendance
+    </button>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+
+        <tbody id="attendanceTable"></tbody>
+    </table>
+
+</div>
+
+<script>
+
+const form = document.getElementById("registrationForm");
+const message = document.getElementById("message");
+
+// Register student
+form.addEventListener("submit", async function(event) {
+
+    event.preventDefault();
+
+    const studentData = {
+        student_id: document.getElementById("student_id").value.trim(),
+        name: document.getElementById("name").value.trim(),
+        email: document.getElementById("email").value.trim()
+    };
+
+    try {
+
+        const response = await fetch("/students", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(studentData)
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+
+            message.style.color = "green";
+            message.textContent = result.message;
+
+            form.reset();
+
+            loadStudents();
+
+        } else {
+
+            message.style.color = "red";
+            message.textContent = result.error;
+
+        }
+
+    } catch (error) {
+
+        message.style.color = "red";
+        message.textContent = "Server connection failed!";
+
+    }
+
+});
+
+// Load students
+async function loadStudents() {
+
+    try {
+
+        const response = await fetch("/students");
+        const students = await response.json();
+
+        const studentList = document.getElementById("studentList");
+
+        studentList.innerHTML = "";
+
+        students.forEach(student => {
+
+            const row = document.createElement("tr");
+
+            [student.id, student.student_id,
+             student.name, student.email].forEach(value => {
+
+                const cell = document.createElement("td");
+                cell.textContent = value;
+                row.appendChild(cell);
+
+            });
+
+            studentList.appendChild(row);
+
+        });
+
+    } catch (error) {
+
+        console.error("Could not load students:", error);
+
+    }
+
+}
+
+// Load students when page opens
+
+// Existing JavaScript functions
+
+loadStudents();
+
+</script>
+</body>
+</html>
